@@ -23,6 +23,8 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 
+using LMS.Models.LMSModels;
+
 namespace LMS.Areas.Identity.Pages.Account
 {
     public class RegisterModel : PageModel
@@ -194,7 +196,89 @@ namespace LMS.Areas.Identity.Pages.Account
         /// <returns>The uID of the new user</returns>
         string CreateNewUser( string firstName, string lastName, DateTime DOB, string departmentAbbrev, string role )
         {
-            return "unknown";
+            string uid = this.GetUniqueUID();
+
+            if(role == "Administrator")
+            {
+                Administrator admin = new Administrator
+                {
+                    UId = uid,
+                    FName = firstName,
+                    LName = lastName,
+                    Dob = DateOnly.FromDateTime(DOB)
+                };
+
+                db.Administrators.Add(admin);
+            }
+            else if(role == "Professor")
+            {
+                Professor professor = new Professor
+                {
+                    UId = uid,
+                    FName = firstName,
+                    LName = lastName,
+                    Dob = DateOnly.FromDateTime(DOB),
+                    WorksIn = departmentAbbrev
+                };
+
+                db.Professors.Add(professor);
+            }
+            else if(role == "Student")
+            {
+                Student student = new Student
+                {
+                    UId = uid,
+                    FName = firstName,
+                    LName = lastName,
+                    Dob = DateOnly.FromDateTime(DOB),
+                    Major = departmentAbbrev
+                };
+
+                db.Students.Add(student);
+            }
+            else
+            {
+                throw new ArgumentException("Invalid role specified");
+            }
+
+            db.SaveChanges();
+
+            return uid;
+        }
+
+        private string GetUniqueUID()
+        {
+            string uid;
+
+            var query = from a in db.Administrators
+                        orderby a.UId descending
+                        select a.UId;
+
+            var query2 = from p in db.Professors
+                         orderby p.UId descending
+                         select p.UId;
+
+            var query3 = from s in db.Students
+                         orderby s.UId descending
+                         select s.UId;
+
+            string maxAdmin = query.FirstOrDefault();
+            string maxProf = query2.FirstOrDefault();
+            string maxStudent = query3.FirstOrDefault();
+
+            var maxUIds = new List<string> { maxAdmin, maxProf, maxStudent };
+
+            string max = maxUIds
+                .Where(x => x != null)
+                .OrderByDescending(x => x)
+                .FirstOrDefault();
+
+            int.TryParse(max.Substring(1), out int maxNum);
+            maxNum++;
+
+            return "u" + maxNum;
+
+
         }
 
         /*******End code to modify********/
