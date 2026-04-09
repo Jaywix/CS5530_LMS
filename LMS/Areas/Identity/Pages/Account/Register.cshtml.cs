@@ -278,9 +278,7 @@ namespace LMS.Areas.Identity.Pages.Account
             int.TryParse(max.Substring(1), out int maxNum);
             maxNum++;
 
-            return "u" + maxNum;
-
-
+            return "u" + maxNum.ToString("D7");
         }
 
         /*******End code to modify********/
