@@ -273,6 +273,8 @@ namespace LMS.Areas.Identity.Pages.Account
                 .OrderByDescending(x => x)
                 .FirstOrDefault();
 
+            if (max == null)
+                return "u0000001";
             int.TryParse(max.Substring(1), out int maxNum);
             maxNum++;
 
