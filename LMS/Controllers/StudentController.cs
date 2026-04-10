@@ -76,7 +76,19 @@ namespace LMS.Controllers
         /// <returns>The JSON array</returns>
         public IActionResult GetMyClasses(string uid)
         {           
-            return Json(null);
+            var query = from e in db.Enrolleds
+                        where e.Student == uid
+                        select new
+                        {
+                            subject = e.ClassNavigation.ListingNavigation.Department,
+                            number = e.ClassNavigation.ListingNavigation.Number,
+                            name = e.ClassNavigation.ListingNavigation.Name,
+                            season = e.ClassNavigation.Season,
+                            year = e.ClassNavigation.Year,
+                            grade = e.Grade
+                        };
+
+            return Json(query.ToArray());
         }
 
         /// <summary>
@@ -135,8 +147,34 @@ namespace LMS.Controllers
         /// <returns>A JSON object containing {success = {true/false}. 
         /// false if the student is already enrolled in the class, true otherwise.</returns>
         public IActionResult Enroll(string subject, int num, string season, int year, string uid)
-        {          
-            return Json(new { success = false});
+        {   
+            // Find the existing class
+            var classQuery = from c in db.Classes
+                             where c.ListingNavigation.Department == subject
+                             && c.ListingNavigation.Number == num
+                             && c.Season == season
+                             && c.Year == year
+                             select c.ClassId;
+
+            uint classId = classQuery.FirstOrDefault();
+            if (classId == 0)
+            {
+                return Json(new { success = false });
+            }
+
+            Enrolled enrollment = new Enrolled { Student = uid, Class = classId, Grade = "--" };    
+
+            db.Enrolleds.Add(enrollment);
+
+            // Save changes and return true if successful, false otherwise (already enrolled)
+            if (db.SaveChanges() > 0)
+            {
+                return Json(new { success = true });
+            }
+            else
+            {
+                return Json(new { success = false });
+            }   
         }
 
 
