@@ -50,7 +50,17 @@ namespace LMS.Controllers
         /// <returns>The JSON array</returns>
         public IActionResult GetCatalog()
         {            
-            return Json(null);
+            var query = from d in db.Departments
+                        select new
+                        {
+                            subject = d.Subject,
+                            dname = d.Name,
+                            courses = (from c in db.Courses
+                                      where c.Department == d.Subject
+                                      select new { number = c.Number, cname = c.Name })
+                                      .ToList()
+                        };
+            return Json(query.ToArray());
         }
 
         /// <summary>
@@ -69,7 +79,20 @@ namespace LMS.Controllers
         /// <returns>The JSON array</returns>
         public IActionResult GetClassOfferings(string subject, int number)
         {            
-            return Json(null);
+            var query = from o in db.Classes join c in db.Courses
+                        on o.Listing equals c.CatalogId
+                        where c.Department == subject && c.Number == number
+                        select new
+                        {
+                            season = o.Season,
+                            year = o.Year,
+                            location = o.Location,
+                            start = o.StartTime.ToString(),
+                            end = o.EndTime.ToString(),
+                            fname = o.TaughtByNavigation.FName,
+                            lname = o.TaughtByNavigation.LName
+                        };
+            return Json(query.ToArray());
         }
 
         /// <summary>
@@ -127,8 +150,23 @@ namespace LMS.Controllers
         /// or an object containing {success: false} if the user doesn't exist
         /// </returns>
         public IActionResult GetUser(string uid)
-        {           
-            return Json(new { success = false });
+        {   
+            // query for students, because there are probably more students than professors or administrators, so this is more likely to find a match if the user exists.
+            // if null then query for professors, if null then return {success: false} because if the user is an Administrator, this field is not present in the returned JSON
+            var query = from s in db.Students
+                        where s.UId == uid
+                        select new { fname = s.FName, lname = s.LName, uid = s.UId, department = s.MajorNavigation.Name };
+            if (query.Count() == 0)
+            {
+                query = from p in db.Professors
+                        where p.UId == uid
+                        select new { fname = p.FName, lname = p.LName, uid = p.UId, department = p.WorksInNavigation.Name };
+                if (query.Count() == 0)
+                {
+                    return Json(new { success = false });   
+                }
+            }
+            return Json(query.First());
         }
 
 
