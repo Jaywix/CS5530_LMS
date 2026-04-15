@@ -108,8 +108,20 @@ namespace LMS.Controllers
         /// <param name="asgname">The name of the assignment in the category</param>
         /// <returns>The assignment contents</returns>
         public IActionResult GetAssignmentContents(string subject, int num, string season, int year, string category, string asgname)
-        {            
-            return Content("");
+        {   
+            var query = from a in db.Assignments join ac in db.AssignmentCategories
+                        on a.Category equals ac.CategoryId join cl in db.Classes
+                        on ac.InClassNavigation.ClassId equals cl.ClassId join co in db.Courses
+                        on cl.Listing equals co.CatalogId
+                        where co.Department == subject && co.Number == num && cl.Season == season && cl.Year == year
+                        && ac.Name == category && a.Name == asgname
+                        select a.Contents;
+            // if there is no such assignment, return the empty string
+            if (query.Count() == 0)
+            {
+                return Content("");
+            }
+            return Content(query.First());
         }
 
 
