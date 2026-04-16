@@ -1,4 +1,8 @@
-﻿using System.Diagnostics;
+﻿/*
+* LMS as designed by Breckon Oakley (u1279814) and Jacob Wixom (u1342286)
+* Controller that handles all Home Controls
+*/
+using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using LMS.Models;
 using System.Runtime.CompilerServices;

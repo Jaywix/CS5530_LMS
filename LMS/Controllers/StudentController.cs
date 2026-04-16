@@ -1,4 +1,8 @@
-﻿using System;
+﻿/*
+* LMS as designed by Breckon Oakley (u1279814) and Jacob Wixom (u1342286)
+* Controller that handles all Professor Controls
+*/
+using System;
 using System.Collections.Generic;
 using System.Drawing.Printing;
 using System.Linq;

@@ -1,4 +1,9 @@
-﻿using System;
+﻿/*
+* LMS as designed by Breckon Oakley (u1279814) and Jacob Wixom (u1342286)
+* Controller that handles all Common Controls
+*/
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
