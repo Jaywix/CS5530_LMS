@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing.Printing;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
@@ -268,9 +269,19 @@ namespace LMS_CustomIdentity.Controllers
 
                 Assignment a = new Assignment() { Name = asgname, MaxPoints = (uint)asgpoints, Due = asgdue, Contents = asgcontents, Category = catquery.First() };
                 db.Assignments.Add(a);
+
                 
-                if(db.SaveChanges() > 0)
+                if(db.SaveChanges() > 0){
+                    // for every student in the class, recalculate their letter grade to account for the new assignment category and assignment
+                    var studentsQuery = from e in db.Enrolleds join s in db.Students on e.Student equals s.UId join cl in db.Classes on e.Class equals cl.ClassId
+                                        where cl.ListingNavigation.Department == subject && cl.ListingNavigation.Number == (uint)num && cl.Season == season && cl.Year == (uint)year
+                                        select s.UId;
+                    foreach (var s in studentsQuery)
+                    {
+                        calculateLetterGrade(s, query.First());
+                    }
                     return Json(new { success = true });
+                }
                 else
                     return Json(new { success = false });
             }
@@ -352,7 +363,18 @@ namespace LMS_CustomIdentity.Controllers
                             where s.Student == uid
                             select s;
 
+
+
+                // Get the class ID for the class this assignment belongs to
+                uint classID = (from c in db.Courses
+                            where c.Department == subject && c.Number == (uint)num
+                            join cl in db.Classes on c.CatalogId equals cl.Listing
+                            where cl.Season == season && cl.Year == (uint)year
+                            select cl.ClassId).First();
+
                 query.First().Score = (uint)score;
+                Console.WriteLine("Calculating letter grade for", uid );
+                calculateLetterGrade(uid, classID);
 
                 if (db.SaveChanges() > 0)
                     return Json(new { success = true });
@@ -392,6 +414,91 @@ namespace LMS_CustomIdentity.Controllers
                         };
 
             return Json(query.ToArray());
+        }
+
+        private void calculateLetterGrade(string Uid, uint classID)
+        {
+            string letterGradeString = "";
+            Console.WriteLine("Calculating letter grade for student " + Uid + " in class " + classID);
+            //Get all the assignment categories for the class
+            var query = from ac in db.AssignmentCategories
+                        join a in db.Assignments on ac.CategoryId equals a.Category
+                        where ac.InClass == classID
+                        join s in db.Submissions
+                        on new {A = a.AssignmentId, B = Uid} equals new {A = s.Assignment, B = s.Student}
+                        into rightSide
+                        from s in rightSide.DefaultIfEmpty()
+                        select new
+                        {
+                            category = ac,
+                            assignment = a,
+                            submission = s
+                        };
+
+            // if student does not have a submission for an assignment, treat it as a submission with score 0
+            var grouped = query.ToList().GroupBy(x => x.category.CategoryId);
+
+            double letterGrade = 0.0;
+            double totalWeight = 0.0;
+            Console.WriteLine("Letter Grade is:", letterGrade);
+            foreach (var group in grouped)
+            {
+                var category = group.First().category;
+                var totalPointsEarned = group.Sum(x => x.submission != null ? x.submission.Score : 0);
+                var totalPointsPossible = group.Sum(x => x.assignment != null ? x.assignment.MaxPoints : 0);
+
+                double categoryGrade = (double)totalPointsEarned / (double)totalPointsPossible;
+
+                letterGrade += categoryGrade * (double)category.Weight;
+                Console.WriteLine("In For loop:" + letterGrade);
+                totalWeight += (double)category.Weight;
+            }
+            Console.WriteLine("After for loop"+ letterGrade);
+
+            double scalingFactor = 100/totalWeight;
+
+            letterGrade *= scalingFactor;
+            letterGrade /= 100.0;
+
+            Console.WriteLine("Post Scaling"+ letterGrade);       
+
+            Console.WriteLine("Final Letter Grade:"+ letterGrade);
+
+            if (letterGrade >= 0.93)
+                letterGradeString = "A";
+            else if (letterGrade >= 0.9)
+                letterGradeString = "A-";
+            else if (letterGrade >= 0.87)
+                letterGradeString = "B+";
+            else if (letterGrade >= 0.83)
+                letterGradeString = "B";
+            else if (letterGrade >= 0.8)
+                letterGradeString = "B-";
+            else if (letterGrade >= 0.77)
+                letterGradeString = "C+";
+            else if (letterGrade >= 0.73)
+                letterGradeString = "C";
+            else if (letterGrade >= 0.7)
+                letterGradeString = "C-";
+            else if (letterGrade >= 0.67)
+                letterGradeString = "D+";
+            else if (letterGrade >= 0.63)
+                letterGradeString = "D";
+            else if (letterGrade >= 0.6)
+                letterGradeString = "D-";
+            else
+                letterGradeString = "E";
+
+            // get students current grade in class and update it
+            var enrollment = (from e in db.Enrolleds 
+                        where e.Student == Uid && e.Class == classID
+                        select e).FirstOrDefault();
+
+            if (enrollment != null)
+            {
+                enrollment.Grade = letterGradeString;
+                db.SaveChanges();
+            }
         }
 
 
