@@ -151,8 +151,6 @@ namespace LMS.Controllers
         {
             try
             {
-                Console.WriteLine("Before query");
-                Console.WriteLine(subject + num + season + year + category + asgname + uid + contents);
                 var query = from c in db.Courses
                             where c.Department == subject && c.Number == num
                             join cl in db.Classes on c.CatalogId equals cl.Listing
@@ -167,14 +165,12 @@ namespace LMS.Controllers
 
                 Submission submission;
 
-                Console.WriteLine("After query");
-
                 // Already exists, so we need to update
                 if (query.First().sub != null)
                 {
-                    Console.WriteLine("Updating existing submission");
                     submission = query.First().sub;
                     submission.SubmissionContents = contents;
+                    submission.Time = DateTime.Now;
 
                     db.Update(submission);
                 }
@@ -196,7 +192,7 @@ namespace LMS.Controllers
                 }
                 
 
-                if (db.SaveChanges() > 1)
+                if (db.SaveChanges() > 0)
                     return Json(new { success = true });
 
                 return Json(new { success = false });
