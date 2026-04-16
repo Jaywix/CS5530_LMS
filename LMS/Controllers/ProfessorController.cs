@@ -497,7 +497,6 @@ namespace LMS_CustomIdentity.Controllers
             if (enrollment != null)
             {
                 enrollment.Grade = letterGradeString;
-                db.SaveChanges();
             }
         }
 
