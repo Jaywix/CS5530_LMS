@@ -259,8 +259,39 @@ namespace LMS.Controllers
         /// <param name="uid">The uid of the student</param>
         /// <returns>A JSON object containing a single field called "gpa" with the number value</returns>
         public IActionResult GetGPA(string uid)
-        {            
-            return Json(null);
+        {   
+            double gpa = 0.0;
+            var query = from e in db.Enrolleds
+                        where e.Student == uid && e.Grade != "--"
+                        select e.Grade;
+            if (query.Count() == 0){
+                return Json(new { gpa = gpa });
+            }
+
+            Dictionary<string, double> gradePoints = new Dictionary<string, double>
+            {
+                { "A", 4.0 },
+                { "A-", 3.7 },
+                { "B+", 3.3 },
+                { "B", 3.0 },
+                { "B-", 2.7 },
+                { "C+", 2.3 },
+                { "C", 2.0 },
+                { "C-", 1.7 },
+                { "D+", 1.3 },
+                { "D", 1.0 },
+                { "D-", 0.7 },
+                { "E", 0.0 }
+            };
+
+            List<string> grades = query.ToList();
+            foreach (string grade in grades)
+            {
+                gpa += gradePoints[grade];
+            }
+            gpa /= grades.Count;
+
+            return Json(new { gpa = gpa });
         }
                 
         /*******End code to modify********/

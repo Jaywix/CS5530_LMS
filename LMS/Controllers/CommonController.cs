@@ -141,7 +141,20 @@ namespace LMS.Controllers
         /// <returns>The submission text</returns>
         public IActionResult GetSubmissionText(string subject, int num, string season, int year, string category, string asgname, string uid)
         {            
-            return Content("");
+            var query = from s in db.Submissions join a in db.Assignments
+                        on s.Assignment equals a.AssignmentId join ac in db.AssignmentCategories
+                        on a.Category equals ac.CategoryId join cl in db.Classes
+                        on ac.InClassNavigation.ClassId equals cl.ClassId join co in db.Courses
+                        on cl.Listing equals co.CatalogId
+                        where co.Department == subject && co.Number == num && cl.Season == season && cl.Year == year
+                        && ac.Name == category && a.Name == asgname && s.Student == uid
+                        select s.SubmissionContents;
+            // if there is no such submission, return the empty string
+            if (query.Count() == 0)
+            {
+                return Content("");
+            }
+            return Content(query.First());
         }
 
 
