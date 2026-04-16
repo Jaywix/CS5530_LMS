@@ -263,6 +263,8 @@ namespace LMS_CustomIdentity.Controllers
                             where c.ListingNavigation.Department == subject && c.ListingNavigation.Number == (uint)num && c.Season == season && c.Year == (uint)year
                             select c.ClassId;
 
+                uint classID = query.First();
+
                 var catquery = from ac in db.AssignmentCategories
                                where ac.InClass == query.First() && ac.Name == category
                                select ac.CategoryId;
@@ -276,10 +278,12 @@ namespace LMS_CustomIdentity.Controllers
                     var studentsQuery = from e in db.Enrolleds join s in db.Students on e.Student equals s.UId join cl in db.Classes on e.Class equals cl.ClassId
                                         where cl.ListingNavigation.Department == subject && cl.ListingNavigation.Number == (uint)num && cl.Season == season && cl.Year == (uint)year
                                         select s.UId;
-                    foreach (var s in studentsQuery)
+                    var students = studentsQuery.ToList();
+                    foreach (var s in students)
                     {
-                        calculateLetterGrade(s, query.First());
+                        calculateLetterGrade(s, classID);
                     }
+                    db.SaveChanges();
                     return Json(new { success = true });
                 }
                 else
