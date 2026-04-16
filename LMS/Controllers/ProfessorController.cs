@@ -392,7 +392,6 @@ namespace LMS_CustomIdentity.Controllers
             }
         }
 
-
         /// <summary>
         /// Returns a JSON array of the classes taught by the specified professor
         /// Each object in the array should have the following fields:
@@ -503,9 +502,6 @@ namespace LMS_CustomIdentity.Controllers
                 enrollment.Grade = letterGradeString;
             }
         }
-
-
-        
         /*******End code to modify********/
     }
 }
