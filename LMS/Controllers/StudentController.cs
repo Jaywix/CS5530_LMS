@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing.Printing;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -150,6 +151,8 @@ namespace LMS.Controllers
         {
             try
             {
+                Console.WriteLine("Before query");
+                Console.WriteLine(subject + num + season + year + category + asgname + uid + contents);
                 var query = from c in db.Courses
                             where c.Department == subject && c.Number == num
                             join cl in db.Classes on c.CatalogId equals cl.Listing
@@ -164,10 +167,12 @@ namespace LMS.Controllers
 
                 Submission submission;
 
+                Console.WriteLine("After query");
 
                 // Already exists, so we need to update
-                if (query.Count() > 0)
+                if (query.First().sub != null)
                 {
+                    Console.WriteLine("Updating existing submission");
                     submission = query.First().sub;
                     submission.SubmissionContents = contents;
 
